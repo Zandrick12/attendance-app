@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { ensureDemoAdmin } from "@/lib/officers.functions";
 import { APP_NAME, APP_SUBTITLE, usernameToEmail } from "@/lib/constants";
 import { logAction } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -26,18 +24,16 @@ export const Route = createFileRoute("/")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const ensureAdmin = useServerFn(ensureDemoAdmin);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    ensureAdmin().catch(() => {});
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/dashboard", replace: true });
-    });
-  }, [ensureAdmin, navigate]);
+  supabase.auth.getUser().then(({ data }) => {
+    if (data.user) navigate({ to: "/dashboard", replace: true });
+  });
+}, [navigate]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
