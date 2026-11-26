@@ -9,13 +9,14 @@ import {
   Menu,
   Settings,
   Shield,
-  ShieldCheck,
   Users,
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentProfile, getLastProfileError, logAction, type Profile } from "@/lib/auth";
-import { APP_NAME } from "@/lib/constants";
+import { APP_NAME, APP_TAGLINE, BRAND_SHORT } from "@/lib/constants";
+import { Avatar, AvatarDialog } from "@/components/AvatarDialog";
+import { Logo } from "@/components/Logo";
 
 const ProfileContext = createContext<Profile | null>(null);
 export const useProfile = () => useContext(ProfileContext)!;
@@ -56,12 +57,11 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       <div className="mb-6 flex items-center gap-3 px-2 pt-2">
-        <span className="flex size-11 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
-          <ShieldCheck className="size-6" />
-        </span>
+        {/* bg-white/10 gives dark logos a light tile; remove "bg-white/10 p-1" if your logo looks better without it */}
+        <Logo className="size-11 shrink-0 bg-white/10 p-1" />
         <div>
-          <p className="font-bold text-white">AMS</p>
-          <p className="text-xs leading-tight text-slate-400">Officer Attendance Management</p>
+          <p className="font-bold text-white">{BRAND_SHORT}</p>
+          <p className="text-xs leading-tight text-slate-400">{APP_TAGLINE}</p>
         </div>
       </div>
 
@@ -99,6 +99,7 @@ export function AppLayout() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [problem, setProblem] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -211,7 +212,7 @@ export function AppLayout() {
               </button>
               <div className="min-w-0">
                 <p className="truncate font-bold tracking-tight">{APP_NAME.toUpperCase()}</p>
-                <p className="hidden text-sm text-muted-foreground sm:block">Officer Attendance Management</p>
+                <p className="hidden text-sm text-muted-foreground sm:block">{APP_TAGLINE}</p>
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-3">
@@ -219,9 +220,14 @@ export function AppLayout() {
                 <p className="font-medium">{profile.name}</p>
                 <p className="text-sm capitalize text-muted-foreground">{profile.role}</p>
               </div>
-              <span className="flex size-10 items-center justify-center rounded-full bg-slate-900 font-semibold text-white">
-                {profile.name.charAt(0).toUpperCase()}
-              </span>
+              <button
+                onClick={() => setAvatarOpen(true)}
+                title="Change profile photo"
+                aria-label="Change profile photo"
+                className="rounded-full ring-offset-2 transition hover:ring-2 hover:ring-emerald-500"
+              >
+                <Avatar profile={profile} />
+              </button>
               <button
                 onClick={signOut}
                 title="Sign out"
@@ -237,6 +243,13 @@ export function AppLayout() {
           </main>
         </div>
       </div>
+
+      <AvatarDialog
+        open={avatarOpen}
+        onOpenChange={setAvatarOpen}
+        profile={profile}
+        onSaved={(url) => setProfile((p) => (p ? { ...p, avatar_url: url } : p))}
+      />
     </ProfileContext.Provider>
   );
 }

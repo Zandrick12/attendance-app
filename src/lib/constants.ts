@@ -1,5 +1,8 @@
-export const APP_NAME = "Attendance Management System";
+export const APP_NAME = "QUANTTE";
 export const APP_SUBTITLE = "Officer sign-in";
+export const APP_TAGLINE = "Officer Attendance Management";
+export const BRAND_SHORT = "ROTC";
+export const LOGO_SRC = "/logo.png";
 
 export const usernameToEmail = (username: string) =>
   `${username.trim().toLowerCase()}@cadet.local`;

@@ -6,6 +6,7 @@ export type Profile = {
   username: string;
   role: "admin" | "officer";
   active: boolean;
+  avatar_url: string | null;
 };
 
 let lastProfileError = "";
@@ -27,7 +28,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   }
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,name,username,role,active")
+    .select("id,name,username,role,active,avatar_url")
     .eq("id", user.id)
     .maybeSingle();
   if (error) {
