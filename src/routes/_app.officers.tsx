@@ -19,8 +19,16 @@ import { createOfficer, resetOfficerPassword, updateOfficer } from "@/lib/office
 export const Route = createFileRoute("/_app/officers")({ component: OfficersPage });
 
 type Role = "admin" | "officer";
-type Officer = { id: string; name: string; username: string; role: Role; active: boolean };
-type LogRow = { id: string; user_name: string; action: string; description: string; created_at: string };
+type Officer = {
+  id: string;
+  name: string;
+  username: string;
+  role: Role;
+  active: boolean;
+  cadet_rank: string | null;
+  cadet_class: string | null;
+  cadet_position: string | null;
+};
 type Mode = null | "add" | "edit" | "password";
 
 const selectCls =
@@ -34,7 +42,6 @@ function OfficersPage() {
   const resetFn = useServerFn(resetOfficerPassword);
 
   const [officers, setOfficers] = useState<Officer[]>([]);
-  const [logs, setLogs] = useState<LogRow[]>([]);
   const [loadError, setLoadError] = useState("");
 
   const [mode, setMode] = useState<Mode>(null);
@@ -44,18 +51,15 @@ function OfficersPage() {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    const [o, l] = await Promise.all([
-      supabase.from("profiles").select("id,name,username,role,active").order("name"),
-      supabase
-        .from("audit_log")
-        .select("id,user_name,action,description,created_at")
-        .order("created_at", { ascending: false })
-        .limit(100),
-    ]);
-    if (o.error || l.error) setLoadError((o.error ?? l.error)!.message);
-    else setLoadError("");
-    if (o.data) setOfficers(o.data as Officer[]);
-    if (l.data) setLogs(l.data as LogRow[]);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id,name,username,role,active,cadet_rank,cadet_class,cadet_position")
+      .order("name");
+    if (error) setLoadError(error.message);
+    else {
+      setLoadError("");
+      setOfficers(data as Officer[]);
+    }
   }, []);
 
   useEffect(() => {
@@ -114,7 +118,7 @@ function OfficersPage() {
     <>
       <PageHeader
         title="Officers"
-        subtitle="Officer accounts and the system audit log."
+        subtitle="Officer accounts. The audit log is now under Settings."
         action={
           isAdmin ? (
             <Button className="h-11" onClick={openAdd}>
@@ -126,7 +130,7 @@ function OfficersPage() {
 
       {loadError ? <p className="mb-4 text-sm text-destructive">Could not load data: {loadError}</p> : null}
 
-      <div className="mb-6 overflow-x-auto rounded-2xl border bg-card p-6 shadow-sm">
+      <div className="overflow-x-auto rounded-2xl border bg-card p-6 shadow-sm">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -140,7 +144,14 @@ function OfficersPage() {
           <tbody>
             {officers.map((o) => (
               <tr key={o.id} className="border-t">
-                <td className="px-3 py-4 font-medium">{o.name}</td>
+                <td className="px-3 py-4">
+                  <p className="font-medium">{[o.cadet_rank, o.name].filter(Boolean).join(" ")}</p>
+                  {o.cadet_class || o.cadet_position ? (
+                    <p className="text-xs text-muted-foreground">
+                      {[o.cadet_class, o.cadet_position].filter(Boolean).join(" · ")}
+                    </p>
+                  ) : null}
+                </td>
                 <td className="px-3 py-4">{o.username}</td>
                 <td className="px-3 py-4 capitalize">{o.role}</td>
                 <td className={"px-3 py-4 " + (o.active ? "text-emerald-600" : "text-muted-foreground")}>
@@ -166,41 +177,6 @@ function OfficersPage() {
             ))}
           </tbody>
         </table>
-      </div>
-
-      <div className="overflow-x-auto rounded-2xl border bg-card p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-bold">Audit Log</h2>
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="text-xs uppercase tracking-wider text-muted-foreground">
-              <th className="px-3 py-3 font-medium">Date / Time</th>
-              <th className="px-3 py-3 font-medium">User</th>
-              <th className="px-3 py-3 font-medium">Action</th>
-              <th className="px-3 py-3 font-medium">Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-3 py-10 text-center text-muted-foreground">
-                  No activity yet.
-                </td>
-              </tr>
-            ) : (
-              logs.map((l) => (
-                <tr key={l.id} className="border-t">
-                  <td className="whitespace-nowrap px-3 py-3 text-muted-foreground">
-                    {new Date(l.created_at).toLocaleString()}
-                  </td>
-                  <td className="px-3 py-3 font-medium">{l.user_name}</td>
-                  <td className="px-3 py-3 font-mono text-xs">{l.action}</td>
-                  <td className="px-3 py-3">{l.description}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-        <p className="mt-3 text-xs text-muted-foreground">Showing the latest 100 entries.</p>
       </div>
 
       <Dialog open={mode !== null} onOpenChange={(o) => !o && setMode(null)}>

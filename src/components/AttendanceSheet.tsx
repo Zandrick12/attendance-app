@@ -237,7 +237,7 @@ export function AttendanceSheet({ session, onBack }: { session: SessionRow; onBa
               Save
             </Button>
             <Button className="h-11" onClick={markDone} disabled={busy || loading}>
-              Save and mark as done
+              Mark as done
             </Button>
           </div>
         ) : null}

@@ -20,6 +20,8 @@ import { Logo } from "@/components/Logo";
 
 const ProfileContext = createContext<Profile | null>(null);
 export const useProfile = () => useContext(ProfileContext)!;
+const UpdateProfileContext = createContext<(patch: Partial<Profile>) => void>(() => {});
+export const useUpdateProfile = () => useContext(UpdateProfileContext);
 
 const NavLink = Link as any; // keeps nav simple; routes are checked at runtime
 
@@ -113,7 +115,7 @@ export function AppLayout() {
       setProfile(p);
     })();
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") navigate({ to: "/", replace: true });
+      if (event === "SIGNED_OUT") navigate({ to: "/login", replace: true });
     });
     return () => {
       cancelled = true;
@@ -144,7 +146,7 @@ export function AppLayout() {
   async function signOut() {
     if (profile) await logAction("LOGOUT", `${profile.username} signed out`);
     await supabase.auth.signOut();
-    navigate({ to: "/", replace: true });
+    navigate({ to: "/login", replace: true });
   }
 
   if (problem) {
@@ -157,7 +159,7 @@ export function AppLayout() {
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white"
             onClick={async () => {
               await supabase.auth.signOut();
-              navigate({ to: "/", replace: true });
+              navigate({ to: "/login", replace: true });
             }}
           >
             Sign out
@@ -177,79 +179,81 @@ export function AppLayout() {
 
   return (
     <ProfileContext.Provider value={profile}>
-      <div className="flex min-h-screen bg-muted/40">
-        {/* Desktop sidebar */}
-        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto bg-slate-900 p-4 text-slate-300 md:flex">
-          <SidebarNav />
-        </aside>
+      <UpdateProfileContext.Provider value={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}>
+        <div className="flex min-h-screen bg-muted/40">
+          {/* Desktop sidebar */}
+          <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto bg-slate-900 p-4 text-slate-300 md:flex">
+            <SidebarNav />
+          </aside>
 
-        {/* Mobile drawer */}
-        {menuOpen ? (
-          <div className="fixed inset-0 z-40 md:hidden">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
-            <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col overflow-y-auto bg-slate-900 p-4 text-slate-300 shadow-xl">
-              <button
-                aria-label="Close menu"
-                onClick={() => setMenuOpen(false)}
-                className="absolute right-3 top-3 rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
-              >
-                <X className="size-5" />
-              </button>
-              <SidebarNav onNavigate={() => setMenuOpen(false)} />
-            </aside>
+          {/* Mobile drawer */}
+          {menuOpen ? (
+            <div className="fixed inset-0 z-40 md:hidden">
+              <div className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
+              <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col overflow-y-auto bg-slate-900 p-4 text-slate-300 shadow-xl">
+                <button
+                  aria-label="Close menu"
+                  onClick={() => setMenuOpen(false)}
+                  className="absolute right-3 top-3 rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+                >
+                  <X className="size-5" />
+                </button>
+                <SidebarNav onNavigate={() => setMenuOpen(false)} />
+              </aside>
+            </div>
+          ) : null}
+
+          <div className="flex min-w-0 flex-1 flex-col">
+            <header className="flex items-center justify-between gap-3 border-b bg-card px-4 py-3 md:px-6 md:py-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <button
+                  aria-label="Open menu"
+                  onClick={() => setMenuOpen(true)}
+                  className="rounded-lg p-2 hover:bg-muted md:hidden"
+                >
+                  <Menu className="size-6" />
+                </button>
+                <div className="min-w-0">
+                  <p className="truncate font-bold tracking-tight">{APP_NAME.toUpperCase()}</p>
+                  <p className="hidden text-sm text-muted-foreground sm:block">{APP_TAGLINE}</p>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-3">
+                <div className="hidden text-right leading-tight sm:block">
+                  <p className="font-medium">{profile.name}</p>
+                  <p className="text-sm capitalize text-muted-foreground">{profile.role}</p>
+                </div>
+                <button
+                  onClick={() => setAvatarOpen(true)}
+                  title="Change profile photo"
+                  aria-label="Change profile photo"
+                  className="rounded-full ring-offset-2 transition hover:ring-2 hover:ring-emerald-500"
+                >
+                  <Avatar profile={profile} />
+                </button>
+                <button
+                  onClick={signOut}
+                  title="Sign out"
+                  aria-label="Sign out"
+                  className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <LogOut className="size-5" />
+                </button>
+              </div>
+            </header>
+            <main className="flex-1 p-4 md:p-10">
+              <Outlet />
+            </main>
           </div>
-        ) : null}
-
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center justify-between gap-3 border-b bg-card px-4 py-3 md:px-6 md:py-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <button
-                aria-label="Open menu"
-                onClick={() => setMenuOpen(true)}
-                className="rounded-lg p-2 hover:bg-muted md:hidden"
-              >
-                <Menu className="size-6" />
-              </button>
-              <div className="min-w-0">
-                <p className="truncate font-bold tracking-tight">{APP_NAME.toUpperCase()}</p>
-                <p className="hidden text-sm text-muted-foreground sm:block">{APP_TAGLINE}</p>
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-3">
-              <div className="hidden text-right leading-tight sm:block">
-                <p className="font-medium">{profile.name}</p>
-                <p className="text-sm capitalize text-muted-foreground">{profile.role}</p>
-              </div>
-              <button
-                onClick={() => setAvatarOpen(true)}
-                title="Change profile photo"
-                aria-label="Change profile photo"
-                className="rounded-full ring-offset-2 transition hover:ring-2 hover:ring-emerald-500"
-              >
-                <Avatar profile={profile} />
-              </button>
-              <button
-                onClick={signOut}
-                title="Sign out"
-                aria-label="Sign out"
-                className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <LogOut className="size-5" />
-              </button>
-            </div>
-          </header>
-          <main className="flex-1 p-4 md:p-10">
-            <Outlet />
-          </main>
         </div>
-      </div>
 
-      <AvatarDialog
-        open={avatarOpen}
-        onOpenChange={setAvatarOpen}
-        profile={profile}
-        onSaved={(url) => setProfile((p) => (p ? { ...p, avatar_url: url } : p))}
-      />
+        <AvatarDialog
+          open={avatarOpen}
+          onOpenChange={setAvatarOpen}
+          profile={profile}
+          onSaved={(url) => setProfile((p) => (p ? { ...p, avatar_url: url } : p))}
+        />
+      </UpdateProfileContext.Provider>
     </ProfileContext.Provider>
   );
 }

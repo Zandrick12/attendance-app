@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { LOGO_SRC } from "@/lib/constants";
 
-// Shows your logo from /public. If the file is missing, it falls back to the shield icon.
+
 export function Logo({ className = "size-11" }: { className?: string }) {
   const [failed, setFailed] = useState(false);
 

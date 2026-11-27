@@ -151,8 +151,8 @@ function DashboardPage() {
             <div className="rounded-2xl border bg-card p-6 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-bold">Recent activity</h2>
-                <Link to="/officers" className="text-sm text-emerald-600 hover:underline">
-                  Full audit log
+                <Link to="/settings" search={{ section: "audit" }} className="text-sm text-emerald-600 hover:underline">
+                   Full audit log
                 </Link>
               </div>
               {stats.activity.length === 0 ? (
